@@ -1,10 +1,3 @@
-//
-//  Steps_to_UnlockApp.swift
-//  Steps to Unlock
-//
-//  Created by Ferdynand Kee on 18/04/26.
-//
-
 import SwiftUI
 import SwiftData
 

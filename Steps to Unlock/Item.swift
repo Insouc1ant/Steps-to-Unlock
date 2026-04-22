@@ -1,10 +1,3 @@
-//
-//  Item.swift
-//  Steps to Unlock
-//
-//  Created by Ferdynand Kee on 18/04/26.
-//
-
 import Foundation
 import SwiftData
 
