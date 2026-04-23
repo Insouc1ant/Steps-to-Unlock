@@ -1,10 +1,3 @@
-//
-//  Item.swift
-//  Steps to Unlock
-//
-//  Created by Ferdynand Kee on 23/04/26.
-//
-
 import Foundation
 import SwiftData
 
@@ -16,3 +9,4 @@ final class Item {
         self.timestamp = timestamp
     }
 }
+
