@@ -14,12 +14,13 @@ struct DashboardView: View {
     // Mock Data
     let minutesRemaining = "11:18"
     let stepsWalked = 288
-    let stepTarget = 700
+    
+    @AppStorage("dailyStepTarget") private var stepTarget: Double = 200
     
     var body: some View {
         VStack(spacing: 0) {
             
-            // MHeader (Title & Gear)
+            // Header (Title & Gear)
             HStack(alignment: .center) {
                 Text("Dashboard")
                     .font(.largeTitle)
@@ -54,7 +55,7 @@ struct DashboardView: View {
                 status: currentStatus,
                 minutesRemaining: minutesRemaining,
                 stepsWalked: stepsWalked,
-                stepTarget: stepTarget
+                stepTarget: Int(stepTarget)
             )
             .padding(.bottom, 40)
             

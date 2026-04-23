@@ -156,49 +156,6 @@ struct OnboardingReviewView: View {
     }
 }
 
-// Reusable Components
-
-struct SectionHeader: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.footnote.weight(.bold))
-                Text(title)
-                    .font(.footnote.weight(.bold)) // Native 13pt Bold
-            }
-            .foregroundStyle(.secondary)
-            
-            Text(subtitle)
-                .font(.footnote) // Native 13pt Regular
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 8)
-        }
-    }
-}
-
-struct DayCircleView: View {
-    let day: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(day)
-                .font(.footnote.weight(.bold)) // Native 13pt Bold
-                .foregroundStyle(isSelected ? .white : .secondary)
-                .frame(width: 36, height: 36)
-                .background(isSelected ? Color.indigo : Color.gray.opacity(0.15))
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 #Preview {
     OnboardingReviewView()
 }
