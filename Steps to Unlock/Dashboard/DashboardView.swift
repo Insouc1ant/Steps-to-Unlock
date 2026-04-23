@@ -94,7 +94,7 @@ struct DashboardView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .sheet(isPresented: $showingSettings) {
-            SettingsView()
+            xSettingsView()
         }
     }
 }

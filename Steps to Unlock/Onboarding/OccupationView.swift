@@ -1,3 +1,5 @@
+// MARK: OPTIONAL FEATURE
+
 import SwiftUI
 
 struct OccupationView: View {

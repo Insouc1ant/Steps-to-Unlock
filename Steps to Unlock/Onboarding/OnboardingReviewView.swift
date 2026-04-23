@@ -1,3 +1,5 @@
+// MARK: OPTIONAl FEATURE
+
 import SwiftUI
 
 // 1. The Data Model to hold unique settings for each day
@@ -141,7 +143,7 @@ struct OnboardingReviewView: View {
                 print("Starting plan...")
                 hasCompletedOnboarding = true
             }) {
-                Text("Start")
+                Text("Continue")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
