@@ -23,7 +23,7 @@ struct ManageAppsView: View {
         ScrollView(showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
                 
-                Text("Select the apps you want to lock after your 30-minute allowance")
+                Text("Select apps to restrict once your allowance is reached. These apps require walking to unlock.")
                     .font(.system(size: 17, weight: .regular))
                     .foregroundStyle(.secondary)
                     .padding(.top, 8)

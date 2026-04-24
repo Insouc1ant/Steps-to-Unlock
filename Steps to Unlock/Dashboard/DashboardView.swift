@@ -1,22 +1,48 @@
 import SwiftUI
-
-// 1. The State Enum
-enum AppStatus {
-    case unlocked
-    case locked
-}
+internal import Combine
 
 struct DashboardView: View {
+    @AppStorage("stepGoals") private var stepGoals: Double = 200
+    @AppStorage("timeEarned") private var timeEarned: Int = 30
+    @AppStorage("isLocked") private var lockStatus: Bool = false
+    @AppStorage("secondsRemaining") private var secondsRemaining: Int = 1800
+    @AppStorage("baselineSteps") private var baselineSteps: Int = 0
+    @AppStorage("timeUsedToday") private var timeUsedToday: Int = 0
+    @AppStorage("lastOpenedDate") private var lastOpenedDate: String = ""
+    
+    
+    @StateObject private var stepManager = StepManager()
     @State private var showingSettings = false
-    // 2. The Unified State Variable (Tap the title to toggle this for testing)
-    @State private var currentStatus: AppStatus = .unlocked
+    @State private var showingInfoAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
     
-    // Mock Data
-    let minutesRemaining = "11:18"
-    let stepsWalked = 288
+    // Timer
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
-    @AppStorage("dailyStepTarget") private var stepTarget: Double = 200
+    // Helper to format "MM:SS"
+    var formattedTime: String {
+        let minutes = secondsRemaining / 60
+        let seconds = secondsRemaining % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
     
+    var formattedTimeUsed: String {
+            let hours = timeUsedToday / 3600
+            let minutes = (timeUsedToday % 3600) / 60
+            
+            if hours > 0 {
+                return "\(hours) h \(minutes) m"
+            } else {
+                return "\(minutes) m"
+            }
+        }
+    
+    var currentSteps: Int {
+        // Prevent negative numbers
+        max(0, stepManager.liveSteps - baselineSteps)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             
@@ -25,12 +51,6 @@ struct DashboardView: View {
                 Text("Dashboard")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    // DEBUG TOGGLE: Tap the title to switch states!
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            currentStatus = currentStatus == .unlocked ? .locked : .unlocked
-                        }
-                    }
                 
                 Spacer()
                 Button(action: {
@@ -39,57 +59,60 @@ struct DashboardView: View {
                     Image(systemName: "gearshape.fill")
                         .resizable()
                         .scaledToFit()
-                        // Visual size is 38x38 per your Sketch
                         .frame(width: 38, height: 38)
                         .foregroundStyle(Color(uiColor: .systemGray2))
-                        // Accessibility hit target increased to 44x44
                         .frame(width: 44, height: 44)
                 }
             }
-            .padding(.top, 42)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 48)
+            .padding(.top, 24)
+            .padding(.horizontal, 18)
+            .padding(.bottom, 32)
             
             // Circular Progress
             HeroProgressRing(
-                status: currentStatus,
-                minutesRemaining: minutesRemaining,
-                stepsWalked: stepsWalked,
-                stepTarget: Int(stepTarget)
+                isLocked : lockStatus,
+                minutesRemaining: formattedTime,
+                secRemaining: secondsRemaining,
+                totalSeconds: timeEarned * 60,
+                stepsWalked: currentSteps,
+                stepTarget: Int(stepGoals)
             )
-            .padding(.bottom, 40)
+            .padding(.bottom, 36)
             
             // App Status Indicator
-            HStack(spacing: 8) {
-                Image(systemName: currentStatus == .unlocked ? "lock.open.fill" : "lock.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 20)
-                
-                Text(currentStatus == .unlocked ? "Apps Unlocked" : "Apps Locked")
-                    .font(.footnote.weight(.semibold)) // Native 13pt
-            }
-            // App Status Color
-            .foregroundStyle(currentStatus == .unlocked ? .green : .red)
-            .padding(.bottom, 17)
+            StatusIndicatorView(isLocked: lockStatus, stepTarget: Int(stepGoals), timeEarned: timeEarned)
+                .padding(.bottom, 16)
             
             // Stat Cards
-            HStack(spacing: 16) {
+            VStack(spacing: 16) {
                 StatCardView(
                     icon: "clock.fill",
-                    title: "Time Used",
-                    value: "1h 18m",
+                    title: "Allowance Used Today",
+                    value: formattedTimeUsed,
                     tintColor: .indigo
-                )
+                ) {
+                    alertTitle = "Allowance Used Today"
+                    alertMessage = "This tracks the total time your restricted apps have been unlocked today.\n\nResets everyday at midnight."
+                    showingInfoAlert = true
+                }
                 
                 StatCardView(
-                    icon: "figure.walk",
+                    icon: "figure.walk.motion",
                     title: "Steps Today",
-                    value: "1888",
+                    value: "\(stepManager.liveSteps)",
                     tintColor: .orange
-                )
+                ) {
+                    alertTitle = "Steps Today"
+                    alertMessage = "Your total physical steps recorded today. Keep walking!\n\nResets everyday at midnight."
+                    showingInfoAlert = true
+                }
             }
             .padding(.horizontal, 24)
+            .alert(alertTitle, isPresented: $showingInfoAlert) {
+                            Button("Got it", role: .cancel) { }
+                        } message: {
+                            Text(alertMessage)
+                        }
             
             Spacer()
         }
@@ -97,97 +120,58 @@ struct DashboardView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
-    }
-}
-
-// Reusable Components
-
-struct HeroProgressRing: View {
-    let status: AppStatus
-    let minutesRemaining: String
-    let stepsWalked: Int
-    let stepTarget: Int
-    
-    // Time and Steps Color Change
-    var ringColor: Color {
-        status == .unlocked ? .indigo : .orange
-    }
-    
-    var progressAmount: Double {
-        status == .unlocked
-            ? 0.35 // Example: 35% time remaining
-            : Double(stepsWalked) / Double(stepTarget)
-    }
-    
-    var body: some View {
-        ZStack {
-            // Background Track
-            Circle()
-                .stroke(Color.gray.opacity(0.15), lineWidth: 24)
+        .onAppear {
+            stepManager.startTracking()
             
-            // Progress Fill
-            Circle()
-                .trim(from: 0.0, to: progressAmount)
-                .stroke(ringColor, style: StrokeStyle(lineWidth: 24, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 1.0, dampingFraction: 0.8), value: progressAmount)
-
-            // Dynamic Text inside the circle
-            VStack(spacing: 4) {
-                if status == .unlocked {
-                    Text(minutesRemaining)
-                        .font(.system(size: 48, weight: .semibold, design: .rounded))
-                    
-                    Text("minutes remaining")
-                        .font(.subheadline) // Native 15pt
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("\(stepsWalked)")
-                        .font(.system(size: 48, weight: .semibold, design: .rounded))
-                    
-                    Text("of \(stepTarget) steps")
-                        .font(.subheadline) // Native 15pt
-                        .foregroundStyle(.secondary)
+            // New day Reset
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let todayString = dateFormatter.string(from: Date())
+    
+            if lastOpenedDate != todayString {
+                timeUsedToday = 0
+                lastOpenedDate = todayString
+            }
+            
+            // First time app opens check
+            if secondsRemaining == 0 && !lockStatus {
+                secondsRemaining = timeEarned * 60
+            }
+        }
+        // MARK: LOGIC
+        .onReceive(timer) { _ in
+            if !lockStatus && secondsRemaining > 0 {
+                
+                // Time Countdown
+                secondsRemaining -= 1
+                
+                // Stats Tracking
+                timeUsedToday += 1
+                
+                // Out ot time
+                if secondsRemaining == 0 {
+                    lockStatus = true
+                    baselineSteps = stepManager.liveSteps
                 }
             }
         }
-        .frame(width: 280, height: 280)
-    }
-}
-
-struct StatCardView: View {
-    let icon: String
-    let title: String
-    let value: String
-    let tintColor : Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) { // 24px padding before the value
-            
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundStyle(tintColor)
-                
-                Text(title)
-                    .font(.footnote.weight(.semibold)) // Native 13pt
-                
-                Spacer()
+        .onChange(of: stepManager.liveSteps) {
+            if lockStatus {
+                if currentSteps >= Int(stepGoals) {
+                    lockStatus = false
+                    secondsRemaining = timeEarned * 60
+                }
             }
-            .foregroundStyle(.secondary)
-            
-            Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
         }
-        .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        
+        // Reset timer when settings updated
+        .onChange(of: timeEarned) {
+                    if !lockStatus {
+                        secondsRemaining = timeEarned * 60
+                    }
+                }
     }
 }
-
 
 #Preview {
     DashboardView()

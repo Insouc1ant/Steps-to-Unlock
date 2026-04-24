@@ -3,8 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     
-    // Save the stepTarget to device
-    @AppStorage("dailyStepTarget") private var stepTarget: Double = 200
+    @AppStorage("stepGoals") private var stepGoals: Double = 200
+    @AppStorage("timeEarned") private var timeEarned: Int = 30
     
     var body: some View {
         NavigationStack {
@@ -14,10 +14,10 @@ struct SettingsView: View {
                     // MARK: - Section 1: APPS
                     SectionHeader(
                         icon: "app.shadow",
-                        title: "APPS",
-                        subtitle: "Select the apps you want to lock"
+                        title: "RESTRICTED APPS",
+                        subtitle: "Select apps to restrict once your allowance is reached. These apps require walking to unlock."
                     )
-                    .padding(.top, 24)
+                    .padding(.top, 36)
                     
                     NavigationLink(destination: ManageAppsView()) {
                         HStack {
@@ -37,36 +37,36 @@ struct SettingsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .padding(.bottom, 48)
                     
                     
-                    // MARK: - Section 2: STEP TARGET TO UNLOCK
+                    // MARK: STEP GOALS
                     SectionHeader(
-                        icon: "figure.walk",
-                        title: "STEP TARGET TO UNLOCK",
-                        subtitle: "Hit this step goal to earn an extra 30 minutes when your daily allowance runs out"
+                        icon: "figure.walk.motion",
+                        title: "STEP GOALS",
+                        subtitle: "Set the steps required to temporarily unlock the specific apps you chose to restrict"
                     )
-
-                    VStack(spacing: 12) {
+                    .padding(.top, 36)
+                    
+                    VStack(spacing: 8) {
                         HStack {
                             Text("Steps")
-                                .font(.body)
+                                .font(.body) // Native 17pt Regular
                             Spacer()
-                            Text("\(Int(stepTarget))")
-                                .font(.headline)
+                            Text("\(Int(stepGoals))")
+                                .font(.headline) // Native 17pt Bold
                                 .foregroundStyle(.indigo)
                         }
                         
-                        Slider(value: $stepTarget, in: 100...2000, step: 10)
+                        Slider(value: $stepGoals, in: 100...2000, step: 10)
                             .tint(.indigo)
                         
                         HStack {
                             Text("100")
-                                .font(.caption)
+                                .font(.caption) // Native 12pt Regular
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("2000")
-                                .font(.caption)
+                                .font(.caption) // Native 12pt Regular
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -75,12 +75,51 @@ struct SettingsView: View {
                     .background(Color(uiColor: .secondarySystemGroupedBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     
-                    Spacer().frame(height: 60)
+                    // MARK: SCREEN TIME EARNED
+                    SectionHeader(
+                        icon: "clock.fill",
+                        title: "SCREEN TIME EARNED",
+                        subtitle: "Choose how much extra screen time you are rewarded with after successfully completing your step goals"
+                    )
+                    .padding(.top, 36)
+
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Allowance Duration")
+                                .font(.body)
+                            
+                            Spacer()
+                            
+                            Picker("Reward Time", selection: $timeEarned) {
+                                Text("Debug").tag(1)
+                                Text("15 Minutes").tag(15)
+                                Text("30 Minutes").tag(30)
+                                Text("45 Minutes").tag(45)
+                                Text("1 Hour").tag(60)
+                                Text("1.5 Hours").tag(90)
+                                Text("2 Hours").tag(120)
+                            }
+                            .pickerStyle(.menu)
+                            .tint(.white)
+                            // This adds a light gray background to the clickable picker
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(uiColor: .systemIndigo))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 18)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .padding(.bottom, 32)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 24)
+
             }
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+            
+            
             
             // MARK: - Navigation
             .navigationTitle("Settings")
