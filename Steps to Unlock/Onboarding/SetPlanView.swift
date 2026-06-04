@@ -5,6 +5,11 @@ struct SetPlanView: View {
     @AppStorage("stepGoals") private var stepGoals: Double = 200
     @AppStorage("timeEarned") private var timeEarned: Int = 30
     @AppStorage("secondsRemaining") private var secondsRemaining: Int = 1800
+    @AppStorage("usageBaselineAtUnlock") private var usageBaselineAtUnlock: Double = 0
+    @AppStorage("needsUsageBaselineInitialization") private var needsUsageBaselineInitialization: Bool = true
+    @AppStorage("baselineSteps") private var baselineSteps: Int = 0
+    @AppStorage("isLocked", store: UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")) private var lockStatus: Bool = false
+    @AppStorage("lockActivatedAt", store: UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")) private var lockActivatedAt: Double = 0
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -26,23 +31,23 @@ struct SetPlanView: View {
                 VStack(spacing: 8) {
                     HStack {
                         Text("Steps")
-                            .font(.body) // Native 17pt Regular
+                            .font(.body)
                         Spacer()
                         Text("\(Int(stepGoals))")
-                            .font(.headline) // Native 17pt Bold
+                            .font(.headline)
                             .foregroundStyle(.indigo)
                     }
                     
-                    Slider(value: $stepGoals, in: 100...2000, step: 10)
+                    Slider(value: $stepGoals, in: 50...2000, step: 10)
                         .tint(.indigo)
                     
                     HStack {
-                        Text("100")
-                            .font(.caption) // Native 12pt Regular
+                        Text("50")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("2000")
-                            .font(.caption) // Native 12pt Regular
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -66,7 +71,7 @@ struct SetPlanView: View {
                         Spacer()
                         
                         Picker("Reward Time", selection: $timeEarned) {
-                            Text("Debug").tag(1)
+                            Text("1 Minute").tag(1)
                             Text("15 Minutes").tag(15)
                             Text("30 Minutes").tag(30)
                             Text("45 Minutes").tag(45)
@@ -95,7 +100,13 @@ struct SetPlanView: View {
         .overlay(alignment: .bottom) {
             Button(action: {
                 secondsRemaining = timeEarned * 60
+                usageBaselineAtUnlock = 0
+                needsUsageBaselineInitialization = true
+                baselineSteps = 0
+                lockStatus = false
+                lockActivatedAt = 0
                 hasCompletedOnboarding = true
+                DeviceActivityManager.shared.startMonitoring(timeLimitMinutes: timeEarned)
             }) {
                 Text("Start Plan")
                     .font(.headline)

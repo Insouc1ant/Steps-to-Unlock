@@ -1,90 +1,188 @@
 import SwiftUI
+import FamilyControls
+import ManagedSettings
 
 struct LockedAppsView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    
-    @State private var searchText = ""
-    @State private var selectedApps: Set<String> = []
-    
-    let allMockApps = [
-        "Discord", "Facebook", "Instagram", "TikTok", "Reddit", "X", "YouTube"
-    ]
-    
-    var filteredApps: [String] {
-        if searchText.isEmpty {
-            return allMockApps
-        } else {
-            return allMockApps.filter { $0.localizedCaseInsensitiveContains(searchText) }
-        }
+    @State private var isPickerPresented = false
+    @State private var selectedApps = FamilyActivitySelection()
+    private let rowHeight: CGFloat = 56
+    private let maxListHeight: CGFloat = 280
+
+    private var selectedCategoryTokens: [ActivityCategoryToken] {
+        Array(selectedApps.categoryTokens)
     }
 
+    private var selectedApplicationTokens: [ApplicationToken] {
+        Array(selectedApps.applicationTokens)
+    }
+
+    private var totalSelectionsCount: Int {
+        selectedCategoryTokens.count + selectedApplicationTokens.count
+    }
+
+    private var hasValidSelection: Bool {
+        totalSelectionsCount > 0
+    }
+
+    private var selectedCategoriesListHeight: CGFloat {
+        min(CGFloat(selectedCategoryTokens.count) * rowHeight, maxListHeight)
+    }
+
+    private var selectedAppsListHeight: CGFloat {
+        min(CGFloat(selectedApplicationTokens.count) * rowHeight, maxListHeight)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            
             Text("Which apps distract\nyou?")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .padding(.top, 12)
+                .foregroundStyle(.primary)
+                .padding(.top, 60)
+                .padding(.leading, 16)
             
-            Text("Select apps to restrict once your allowance is reached. These apps require walking to unlock.")
-                .font(.system(size: 17, weight: .regular))
-                .foregroundStyle(.secondary)
-                .padding(.top, 8)
+            Spacer().frame(height: 32)
             
-            InlineSearchBar(text: $searchText)
-                .padding(.top, 24)
-                .padding(.bottom, 32)
+            SectionHeader(
+                icon: "app.shadow",
+                title: "RESTRICTED APPS",
+                subtitle: "Select apps to restrict once your allowance is reached.\nThese apps require walking to unlock."
+            )
+            .padding(.top, 12)
+            .padding(.leading, 16)
             
-            ScrollView(showsIndicators: true) {
-                
-                // 1. The Unified Card Container
+            Spacer().frame(height: 8)
+            
+            Button {
+                requestPermissionsAndShowPicker()
+            } label: {
+                HStack(spacing: 16) {
+                    Text(hasValidSelection ? "\(totalSelectionsCount) Selections Added" : "Select Apps to Restrict")
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .tint(.indigo)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 16)
+                .background(Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .padding(.horizontal, 16)
+
+            // 📦 COMBINED LIST: Categories + Individual Apps
+        if hasValidSelection {
+            Spacer().frame(height: 20)
+
+            Text("Selected Items")
+                .font(.headline)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+
+            ScrollView(showsIndicators: totalSelectionsCount > 4) {
                 VStack(spacing: 0) {
                     
-                    // Use enumerated() so we know which item is the last one
-                    ForEach(Array(filteredApps.enumerated()), id: \.element) { index, appName in
-                        
-                        AppSelectionRow(
-                            appName: appName,
-                            isSelected: selectedApps.contains(appName)
-                        ) {
-                            if selectedApps.contains(appName) {
-                                selectedApps.remove(appName)
-                            } else {
-                                selectedApps.insert(appName)
+                    // 1. Loop through Categories First
+                    ForEach(Array(selectedCategoryTokens.enumerated()), id: \.element) { index, token in
+                        VStack(spacing: 0) {
+                            HStack(spacing: 12) {
+                                // Use Apple's magic Label for Categories too!
+                                Label(token)
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+                            }
+                            .frame(height: rowHeight)
+                            .padding(.horizontal, 16)
+
+                            // Show divider unless it's the absolute last item in the combined list
+                            if index < selectedCategoryTokens.count - 1 || !selectedApplicationTokens.isEmpty {
+                                Divider().padding(.leading, 52)
                             }
                         }
-                        
-                        // 2. The Custom Divider (Hidden on the last item)
-                        if index < filteredApps.count - 1 {
-                            Divider()
-                                // 16px row padding + 44px icon + 16px spacing = 76px
-                                .padding(.leading, 76)
+                    }
+                    
+                    // 2. Loop through Individual Apps Second
+                    ForEach(Array(selectedApplicationTokens.enumerated()), id: \.element) { index, token in
+                        VStack(spacing: 0) {
+                            HStack(spacing: 12) {
+                                Label(token)
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+                            }
+                            .frame(height: rowHeight)
+                            .padding(.horizontal, 16)
+
+                            if index < selectedApplicationTokens.count - 1 {
+                                Divider().padding(.leading, 52)
+                            }
                         }
                     }
                 }
-                
-                // Card Styling
-                .background(Color(uiColor: .secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .padding(.bottom, 100)
             }
+            // Dynamically size the box based on total items
+            .frame(height: min(CGFloat(totalSelectionsCount) * rowHeight, maxListHeight))
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .padding(.horizontal, 24)
+
+            Spacer()
+        }
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-        
-        .overlay(alignment: .bottom) {
-            NavigationLink(destination: SetPlanView())
-            {
-                Text("Continue (\(selectedApps.count))")
+
+        .safeAreaInset(edge: .bottom) {
+            NavigationLink(destination: SetPlanView()) {
+                Text("Continue")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(.indigo)
-            .disabled(selectedApps.isEmpty)
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
+            .disabled(!hasValidSelection)
+        }
+        
+        .familyActivityPicker(
+            isPresented: $isPickerPresented,
+            selection: $selectedApps
+        )
+
+        .onChange(of: selectedApps) { oldValue, newValue in
+            // Don't block them yet! Just save them for when the timer hits zero.
+            ScreenTimeManager.shared.saveSelection(newValue)
+        }
+    }
+    
+    // MARK: - Logic
+    
+    private func requestPermissionsAndShowPicker() {
+        Task {
+            do {
+                // 1. Request permission (Pop-up will only show the first time)
+                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                
+                // 2. If granted, slide up the native picker sheet
+                isPickerPresented = true
+            } catch {
+                print("Permission denied: \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -92,4 +190,3 @@ struct LockedAppsView: View {
 #Preview {
     LockedAppsView()
 }
-

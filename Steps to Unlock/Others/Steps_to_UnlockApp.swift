@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct Steps_to_UnlockApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -21,5 +23,12 @@ struct Steps_to_UnlockApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task {
+                    await UnlockManager.shared.checkForUnlockIfNeeded()
+                }
+            }
+        }
     }
 }
