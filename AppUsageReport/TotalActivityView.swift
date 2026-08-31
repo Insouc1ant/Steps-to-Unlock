@@ -21,3 +21,4 @@ struct TotalActivityView: View {
 #Preview {
     TotalActivityView(totalActivity: "1h 23m")
 }
+
