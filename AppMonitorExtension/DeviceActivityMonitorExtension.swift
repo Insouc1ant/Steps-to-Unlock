@@ -32,7 +32,8 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         super.eventDidReachThreshold(event, activity: activity)
         
         // Handle the event reaching its threshold: re-apply the shield to lock the apps.
-        guard let data = UserDefaults(suiteName: appGroupSuiteName)?.data(forKey: savedAppTokensKey),
+        guard let sharedDefaults = UserDefaults(suiteName: appGroupSuiteName),
+              let data = sharedDefaults.data(forKey: savedAppTokensKey),
               let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else {
             print("No saved app selection found to shield.")
             return
@@ -41,6 +42,10 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         store.shield.applications = selection.applicationTokens
         store.shield.applicationCategories = ShieldSettings.ActivityCategoryPolicy.specific(selection.categoryTokens)
         store.shield.webDomains = selection.webDomainTokens
+        
+        // Update lock status for the main app UI and widget
+        sharedDefaults.set(true, forKey: "isLocked")
+        sharedDefaults.set(Date().timeIntervalSince1970, forKey: "lockActivatedAt")
         
         print("Threshold reached for \(event.rawValue) — apps re-locked.")
     }
