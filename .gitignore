@@ -1,0 +1,32 @@
+# ===== XCODE BUILD FILES =====
+build/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+
+# ===== XCODE USER SETTINGS =====
+xcuserdata/
+*.xccheckout
+*.moved-aside
+
+# ===== SWIFT PACKAGE MANAGER =====
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# ===== COCOAPODS (if you use it later) =====
+Pods/
+Podfile.lock
+
+# ===== SENSITIVE FILES (very important!) =====
+*.env
+Secrets.swift
+APIKeys.swift
+GoogleService-Info.plist
+
+# ===== PREVIEW CONTENT =====
+*.xcplayground
