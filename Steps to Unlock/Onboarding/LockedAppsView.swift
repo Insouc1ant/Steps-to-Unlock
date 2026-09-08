@@ -5,6 +5,7 @@ import ManagedSettings
 struct LockedAppsView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @State private var isPickerPresented = false
+    @State private var isRequestingPermission = false
     @State private var selectedApps = FamilyActivitySelection()
     private let rowHeight: CGFloat = 56
     private let maxListHeight: CGFloat = 280
@@ -65,16 +66,22 @@ struct LockedAppsView: View {
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    if isRequestingPermission {
+                        ProgressView()
+                            .tint(.indigo)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    }
                 }
                 .padding(.vertical, 16)
                 .padding(.horizontal, 16)
                 .background(Color(uiColor: .secondarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
+            .disabled(isRequestingPermission)
             .padding(.horizontal, 16)
 
             // 📦 COMBINED LIST: Categories + Individual Apps
@@ -108,7 +115,7 @@ struct LockedAppsView: View {
                             // Show divider unless it's the absolute last item in the combined list
                             if index < selectedCategoryTokens.count - 1 || !selectedApplicationTokens.isEmpty {
                                 Divider().padding(.leading, 52)
-                            }
+                            }xq
                         }
                     }
                     

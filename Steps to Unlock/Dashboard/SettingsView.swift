@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     
     @AppStorage("stepGoals") private var stepGoals: Double = 200
+    @State private var localStepGoals: Double = 200
     @AppStorage("timeEarned") private var timeEarned: Int = 30
     
     @State private var isPickerPresented = false
@@ -141,12 +142,12 @@ struct SettingsView: View {
                             Text("Steps")
                                 .font(.body)
                             Spacer()
-                            Text("\(Int(stepGoals))")
+                            Text("\(Int(localStepGoals))")
                                 .font(.headline)
                                 .foregroundStyle(.indigo)
                         }
                         
-                        Slider(value: $stepGoals, in: 50...2000, step: 10)
+                        Slider(value: $localStepGoals, in: 50...2000, step: 10)
                             .tint(.indigo)
                         
                         HStack {
@@ -216,10 +217,16 @@ struct SettingsView: View {
                 ScreenTimeManager.shared.saveSelection(newValue)
             }
             .onAppear {
+                localStepGoals = stepGoals
                 if let data = UserDefaults.standard.data(forKey: "SavedAppTokens"),
                    let savedSelection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
                     selectedApps = savedSelection
                 }
+            }
+            .onDisappear {
+                stepGoals = localStepGoals
+                UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")?.set(Int(localStepGoals), forKey: "stepGoals")
+                UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")?.set(timeEarned, forKey: "timeEarned")
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -230,6 +237,9 @@ struct SettingsView: View {
                         .foregroundStyle(Color(uiColor: .tertiaryLabel))
                         .contentShape(Rectangle())
                         .onTapGesture {
+                            stepGoals = localStepGoals
+                            UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")?.set(Int(localStepGoals), forKey: "stepGoals")
+                            UserDefaults(suiteName: "group.com.kee.Steps-to-Unlock")?.set(timeEarned, forKey: "timeEarned")
                             dismiss()
                         }
                 }

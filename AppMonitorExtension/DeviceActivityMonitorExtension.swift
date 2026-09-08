@@ -9,6 +9,7 @@ import DeviceActivity
 import FamilyControls
 import ManagedSettings
 import Foundation
+import UserNotifications
 
 // Optionally override any of the functions below.
 // Make sure that your class name matches the NSExtensionPrincipalClass in your Info.plist.
@@ -48,6 +49,30 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         sharedDefaults.set(Date().timeIntervalSince1970, forKey: "lockActivatedAt")
         
         print("Threshold reached for \(event.rawValue) — apps re-locked.")
+        
+        // Send a notification that screen time is up and apps are locked
+        sendLockNotification(sharedDefaults: sharedDefaults)
+    }
+    
+    private func sendLockNotification(sharedDefaults: UserDefaults) {
+        let content = UNMutableNotificationContent()
+        content.title = "Screen Time is Up! 🔒"
+        let stepGoals = sharedDefaults.integer(forKey: "stepGoals")
+        if stepGoals > 0 {
+            content.body = "Your apps are now locked. Walk \(stepGoals) steps to unlock them!"
+        } else {
+            content.body = "Your restricted apps are now locked. Walk to reach your step goal and unlock them!"
+        }
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule lock notification: \(error.localizedDescription)")
+            }
+        }
     }
     
     override func intervalWillStartWarning(for activity: DeviceActivityName) {
